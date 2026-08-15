@@ -1,0 +1,30 @@
+<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sri Hari Tyres Queue</title>
+<style>
+body{margin:0;background:#0b0b0b;color:white;font-family:Arial}header{text-align:center;padding:25px;background:#151515;border-bottom:5px solid #e31b23}h1{margin:0;font-size:42px}.sub{color:#aaa;letter-spacing:4px}.wrap{max-width:900px;margin:auto;padding:15px}.card{background:#181818;padding:20px;margin:15px 0;border-radius:16px}input,select,textarea{width:100%;padding:13px;margin:6px 0 14px;box-sizing:border-box;background:#080808;color:white;border:1px solid #555;border-radius:9px}button{padding:13px 18px;border:0;border-radius:9px;font-weight:bold;margin:4px;background:#e31b23;color:white}.gray{background:#444}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.item{background:#252525;padding:15px;margin:8px 0;border-radius:10px}.big{font-size:80px;font-weight:900}.vehicle{font-size:40px;font-weight:bold}.model{font-size:28px}.tech{color:#aaa;font-size:20px;margin-top:8px}.muted{color:#aaa}.hidden{display:none}.tvgrid{max-width:1200px;margin:auto;padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px}.panel{background:#171717;padding:25px;border-radius:20px;text-align:center}.now{border:2px solid #e31b23}.waiting div{padding:10px;background:#252525;margin:7px;border-radius:8px;font-size:22px}@media(max-width:700px){.row,.tvgrid{grid-template-columns:1fr}}
+</style></head><body>
+<header><h1>SRI HARI TYRES</h1><div class="sub">LIVE ALIGNMENT QUEUE</div></header>
+<div id="setup" class="wrap"><div class="card"><h2>Firebase Setup</h2>
+<p class="muted">Paste the Firebase Web App configuration you copied. You may paste the complete <b>const firebaseConfig = {...};</b> code.</p>
+<textarea id="cfg" rows="10" placeholder="Paste Firebase configuration here"></textarea><button onclick="connect()">SAVE & CONNECT</button><p id="msg">Not connected</p></div></div>
+<div id="admin" class="wrap hidden"><div class="card"><h2>Shop Control</h2><button onclick="tv()">OPEN TV DISPLAY</button><button class="gray" onclick="clearQ()">CLEAR QUEUE</button></div>
+<div class="card"><h2>ADD VEHICLE</h2><div class="row"><div>Vehicle Number<input id="reg" placeholder="TN 49 AB 1234"></div><div>Vehicle Model<input id="model" placeholder="Tata Punch"></div></div>
+Alignment Technician<select id="tech"><option>Aravind</option><option>Arjun</option><option>Arivazhagan</option><option>Sarath</option><option>Venkatesh</option><option>Vijay</option></select><button onclick="add()">ADD TO QUEUE</button></div>
+<div class="card"><h2>NOW SERVING</h2><div id="now">None</div></div><div class="card"><h2>WAITING QUEUE</h2><div id="queue"></div></div></div>
+<div id="tvpage" class="hidden"><header><h1>SRI HARI TYRES</h1><div class="sub">LIVE ALIGNMENT QUEUE</div></header><div class="tvgrid">
+<div class="panel now"><h2>NOW SERVING</h2><div id="tnow">—</div></div><div class="panel"><h2>NEXT VEHICLE</h2><div id="tnext">—</div></div><div class="panel" style="grid-column:1/-1"><h2>WAITING</h2><div id="twait" class="waiting"></div></div></div></div>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+<script>
+let db,ref,data={};
+function parse(s){s=s.trim();let m=s.match(/const\s+firebaseConfig\s*=\s*(\{[\s\S]*?\})\s*;?/);if(m)s=m[1];try{return JSON.parse(s)}catch(e){}s=s.replace(/([{,]\s*)([A-Za-z_$][\w$]*)\s*:/g,'$1"$2":').replace(/,\s*}/g,'}');return JSON.parse(s)}
+function connect(){try{let c=parse(document.getElementById('cfg').value);if(!c.databaseURL)throw Error('databaseURL is missing. Choose Config in Firebase and copy again.');firebase.initializeApp(c);db=firebase.database();ref=db.ref('alignmentQueue');ref.on('value',x=>render(x.val()||{}));localStorage.qcfg=document.getElementById('cfg').value;setup.classList.add('hidden');admin.classList.remove('hidden');msg.textContent='Connected ✓'}catch(e){msg.textContent='Error: '+e.message}}
+function add(){let r=reg.value.trim().toUpperCase(),m=model.value.trim(),t=tech.value;if(!r||!m)return alert('Enter vehicle number and model');ref.push({reg:r,model:m,tech:t,status:'waiting',createdAt:Date.now()});reg.value='';model.value=''}
+function render(d){data=d;let a=Object.entries(d).map(([id,v])=>({...v,id})).sort((x,y)=>x.createdAt-y.createdAt),now=a.find(x=>x.status==='serving'),w=a.filter(x=>x.status==='waiting');document.getElementById('now').innerHTML=now?card(now,true):'None';queue.innerHTML=w.length?w.map((v,i)=>'<div class="item"><b>'+String(i+1).padStart(2,'0')+' — '+v.reg+'</b><br>'+v.model+'<br><span class="muted">Technician: '+v.tech+'</span><br><button onclick="serve(\''+v.id+'\')">NOW SERVING</button><button class="gray" onclick="removeV(\''+v.id+'\')">REMOVE</button></div>').join(''):'No vehicles waiting';tnow.innerHTML=now?card(now,false):'—';tnext.innerHTML=w[0]?card(w[0],false):'—';twait.innerHTML=w.slice(1).map((v,i)=>'<div>'+String(i+2).padStart(2,'0')+' — '+v.reg+' • '+v.model+' • '+v.tech+'</div>').join('')||'No additional vehicles'}
+function card(v,controls){return '<div class="vehicle">'+v.reg+'</div><div class="model">'+v.model+'</div><div class="tech">👨‍🔧 '+v.tech+'</div>'+(controls?'<button class="gray" onclick="removeV(\''+v.id+'\')">FINISH</button>':'')}
+function serve(id){let u={};Object.entries(data).forEach(([k,v])=>{if(v.status==='serving')u[k+'/status']='waiting'});u[id+'/status']='serving';ref.update(u)}
+function removeV(id){ref.child(id).remove()}function clearQ(){if(confirm('Clear queue?'))ref.set(null)}
+function tv(){open(location.href.split('?')[0]+'?tv=1','_blank')}
+function startTV(){setup.classList.add('hidden');admin.classList.add('hidden');tvpage.classList.remove('hidden');let c=localStorage.qcfg;if(c){cfg.value=c;connect()}else{tnow.innerHTML='Open the control page and connect Firebase first'}}
+window.addEventListener('load',()=>{if(location.search.includes('tv=1'))startTV();else if(localStorage.qcfg)cfg.value=localStorage.qcfg})
+</script></body></html>
