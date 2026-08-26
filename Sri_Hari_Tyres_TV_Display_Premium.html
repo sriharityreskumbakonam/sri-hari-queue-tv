@@ -1,0 +1,44 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CEAT Alignment Queue</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#071522;color:#fff;font-family:Arial,Helvetica,sans-serif}
+header{height:13vh;min-height:76px;background:#0B2238;border-bottom:2px solid #FF6B00;padding:2.2vh 4vw;display:flex;align-items:center;justify-content:space-between}
+.brand{font-size:clamp(22px,3vw,46px);font-weight:900;letter-spacing:.5px}.sub{font-size:clamp(10px,1.1vw,18px);color:#9CB3C8;margin-top:5px;letter-spacing:1px}.clock{font-size:clamp(18px,2.1vw,34px);font-weight:700;text-align:right}.date{font-size:clamp(11px,1vw,16px);color:#9CB3C8;margin-top:4px}
+main{min-height:87vh;padding:2.5vh 4vw 3vh}.label{font-size:clamp(14px,1.5vw,23px);letter-spacing:3px;color:#38BDF8;font-weight:800;text-align:center;margin-bottom:1vh}
+.now{min-height:53vh;background:linear-gradient(145deg,#10263A,#0B1B2B);border:1px solid #24445E;border-radius:22px;padding:2vh 4vw;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.tokenline{font-size:clamp(16px,2vw,28px);color:#FFB27A;font-weight:800;margin-bottom:1vh}.vehicle{font-size:clamp(42px,7.2vw,112px);font-weight:900;letter-spacing:2px;line-height:1.05;word-break:break-word}.model{font-size:clamp(25px,3.4vw,58px);font-weight:800;margin-top:1.2vh;color:#EAF3FA}.service{font-size:clamp(17px,2.2vw,34px);font-weight:800;margin-top:2vh;color:#FF8C42}.tech{font-size:clamp(16px,1.8vw,28px);margin-top:1.8vh;color:#B8CBDC}.status{font-size:clamp(13px,1.4vw,22px);font-weight:900;color:#34D399;margin-top:1.4vh;letter-spacing:1px}
+.next{margin-top:2.5vh}.nextTitle{text-align:center;font-size:clamp(17px,2vw,30px);font-weight:900;color:#fff;margin-bottom:1.4vh}.nextGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2vw}.nextCard{background:#102235;border:1px solid #294861;border-radius:14px;padding:1.5vh 1.2vw;text-align:center;min-height:15vh;display:flex;flex-direction:column;justify-content:center}.nextToken{font-size:clamp(13px,1.5vw,22px);color:#FF9A55;font-weight:900}.nextVehicle{font-size:clamp(18px,2.4vw,38px);font-weight:900;margin-top:.5vh}.nextModel{font-size:clamp(11px,1.3vw,20px);color:#D9E5EF;margin-top:.5vh}.nextService{font-size:clamp(10px,1.1vw,17px);color:#8FA9BF;margin-top:.6vh}
+.empty{color:#8FA9BF;font-size:clamp(18px,2.2vw,32px)}
+@media(max-width:700px){header{height:auto;min-height:0;padding:16px 14px}.brand{font-size:22px}.sub{font-size:9px}.clock{font-size:17px}.date{font-size:9px}main{padding:16px 10px}.now{min-height:50vh;padding:20px 10px}.vehicle{font-size:44px}.model{font-size:26px}.service{font-size:18px}.tech{font-size:16px}.nextGrid{grid-template-columns:repeat(2,1fr);gap:8px}.nextCard{min-height:130px;padding:12px 6px}.nextVehicle{font-size:18px}.nextModel{font-size:12px}}
+</style></head>
+<body class="tv">
+<header>
+  <div><div class="brand">SRI HARI TYRES</div><div class="sub">SMART WHEEL ALIGNMENT &amp; SERVICE QUEUE</div></div>
+  <div><div class="clock" id="clock">--:--</div><div class="date" id="dateText"></div></div>
+</header>
+<main id="app"></main>
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import{getDatabase,ref,onValue,set}from"https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+const firebaseConfig={apiKey:"AIzaSyBK0In5N5EvmC25Ue6IvDt-icCP1JezqOI",authDomain:"ceat-alignment-queue.firebaseapp.com",databaseURL:"https://ceat-alignment-queue-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"ceat-alignment-queue",storageBucket:"ceat-alignment-queue.firebasestorage.app",messagingSenderId:"481982113916",appId:"1:481982113916:web:12a6a08c214755df6c41f9"};
+const db=getDatabase(initializeApp(firebaseConfig)),qr=ref(db,"queue"),tv=new URLSearchParams(location.search).get("tv")==="1";
+document.body.className="tv";document.getElementById("title").textContent="CUSTOMER DISPLAY";
+const techs=["Aravind","Arjun","Arivazhagan","Sarath","Venkatesh","Vijay"];
+let s={items:[],current:null,next:1,completed:0};
+onValue(qr,x=>{s=x.val()||{items:[],current:null,next:1,completed:0};render()});
+const save=()=>set(qr,s);
+window.add=async()=>{let v=vehicle.value.trim().toUpperCase();if(!v)return alert("Enter vehicle number");s.items.push({token:"A"+String(s.next++).padStart(2,"0"),vehicle:v,model:model.value||"Vehicle",service:service.value,tech:technician.value});vehicle.value=model.value="";await save()};
+window.serve=async()=>{if(s.current)return alert("Complete current vehicle first");if(!s.items.length)return;s.current=s.items.shift();await save()};
+window.done=async()=>{if(!s.current)return;s.current=null;s.completed=(s.completed||0)+1;await save()};
+window.changeTech=async(i,v)=>{s.items[i].tech=v;await save()};
+function render(){
+ if(tv){app.innerHTML=`<div class="now"><div>NOW SERVING</div><div class="token">${s.current?.token||"—"}</div><div class="vehicle">${s.current?.vehicle||"Please wait"} • ${s.current?.model||""}</div><div class="tech">${s.current?"Technician: "+s.current.tech:""}</div></div><div class="card"><h2>NEXT QUEUE</h2>${table()}</div>`}
+ else{app.innerHTML=`<div class="card"><h2>Add Vehicle</h2><div class="grid"><input id="vehicle" placeholder="Vehicle number"><input id="model" placeholder="Model"><select id="service"><option>Wheel Alignment</option><option>Alignment + Balancing</option><option>Tyre Rotation</option><option>Check-up</option></select><select id="technician">${techs.map(t=>`<option>${t}</option>`).join("")}</select></div><button onclick="add()">ADD TO QUEUE</button></div><div class="card"><h2>Now Serving</h2><div class="now"><div class="token">${s.current?.token||"—"}</div>${s.current?`${s.current.vehicle} • ${s.current.model} • ${s.current.tech}`:"No vehicle"}</div><button onclick="serve()">SERVE NEXT</button><button onclick="done()">COMPLETE</button></div><div class="card"><h2>Waiting Queue</h2>${table(true)}</div>`}
+}
+function table(edit=false){if(!s.items.length)return "<p>No vehicles waiting.</p>";return `<table><tr><th>Token</th><th>Vehicle</th><th>Service</th><th>Technician</th></tr>${s.items.map((x,i)=>`<tr><td><b>${x.token}</b></td><td>${x.vehicle} • ${x.model}</td><td>${x.service}</td><td>${edit?`<select onchange="changeTech(${i},this.value)">${techs.map(t=>`<option ${t==x.tech?"selected":""}>${t}</option>`).join("")}</select>`:"<b>"+x.tech+"</b>"}</td></tr>`).join("")}</table>`}
+setInterval(()=>{
+ const n=new Date();
+ const c=document.getElementById('clock'),d=document.getElementById('dateText');
+ if(c)c.textContent=n.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+ if(d)d.textContent=n.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+},1000);
+</script></body></html>
